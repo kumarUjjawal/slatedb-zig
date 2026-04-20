@@ -66,18 +66,18 @@ pub fn waitU64(handle: u64) rust_call.CallError!u64 {
 }
 
 pub fn waitPointer(handle: u64) rust_call.CallError!?*anyopaque {
-    defer ffi.c.ffi_slatedb_uniffi_rust_future_free_pointer(handle);
+    defer ffi.c.ffi_slatedb_uniffi_rust_future_free_u64(@intCast(handle));
 
-    waitUntilReady(handle, ffi.c.ffi_slatedb_uniffi_rust_future_poll_pointer);
+    waitUntilReady(handle, ffi.c.ffi_slatedb_uniffi_rust_future_poll_u64);
 
     var status = std.mem.zeroes(ffi.c.RustCallStatus);
-    const value = ffi.c.ffi_slatedb_uniffi_rust_future_complete_pointer(handle, &status);
+    const value = ffi.c.ffi_slatedb_uniffi_rust_future_complete_u64(@intCast(handle), &status);
     try rust_call.checkStatus(status);
-    if (value == null) {
+    if (value == 0) {
         err.rememberInternalMessage("Rust future returned a null pointer");
         return error.Internal;
     }
-    return value;
+    return @ptrFromInt(value);
 }
 
 pub fn waitVoid(handle: u64) rust_call.CallError!void {

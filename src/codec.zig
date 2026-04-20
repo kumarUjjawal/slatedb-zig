@@ -5,6 +5,7 @@ const rust_buffer = @import("rust_buffer.zig");
 const types = @import("types.zig");
 
 pub const WriteHandle = types.WriteHandle;
+pub const DbStatus = types.DbStatus;
 pub const KeyRange = types.KeyRange;
 pub const KeyValue = types.KeyValue;
 pub const RowEntry = types.RowEntry;
@@ -44,6 +45,10 @@ pub const BufferReader = struct {
     }
 
     pub fn readI64(self: *BufferReader) err.CallError!i64 {
+        return @bitCast(try self.readU64());
+    }
+
+    pub fn readF64(self: *BufferReader) err.CallError!f64 {
         return @bitCast(try self.readU64());
     }
 
@@ -96,6 +101,13 @@ pub fn decodeWriteHandle(reader: *BufferReader) err.CallError!WriteHandle {
     return .{
         .seqnum = try reader.readU64(),
         .create_ts = try reader.readI64(),
+    };
+}
+
+pub fn decodeDbStatus(reader: *BufferReader) err.CallError!DbStatus {
+    return .{
+        .durable_seq = try reader.readU64(),
+        .close_reason = try decodeOptionalCloseReason(reader),
     };
 }
 
@@ -276,6 +288,14 @@ fn decodeCloseReason(reader: *BufferReader) err.CallError!err.CloseReason {
         2 => .fenced,
         3 => .background_panic,
         4 => .unknown,
+        else => unexpectedEnumTag(),
+    };
+}
+
+fn decodeOptionalCloseReason(reader: *BufferReader) err.CallError!?err.CloseReason {
+    return switch (try reader.readInt8()) {
+        0 => null,
+        1 => try decodeCloseReason(reader),
         else => unexpectedEnumTag(),
     };
 }

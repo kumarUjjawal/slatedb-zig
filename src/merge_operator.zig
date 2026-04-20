@@ -46,9 +46,10 @@ var merge_operator_handles: callback_handle_map.HandleMap(MergeOperator) = .{};
 var merge_operator_vtable_registered = false;
 var merge_operator_vtable_mutex: spin_lock.SpinLock = .{};
 
-var merge_operator_vtable = ffi.c.UniffiVTableCallbackInterfaceMergeOperator{
-    .merge = @ptrCast(&slatedb_uniffi_cgo_dispatchCallbackInterfaceMergeOperatorMethod0),
+var merge_operator_vtable = ffi.UniffiVTableCallbackInterfaceMergeOperator{
     .uniffiFree = @ptrCast(&slatedb_uniffi_cgo_dispatchCallbackInterfaceMergeOperatorFree),
+    .uniffiClone = @ptrCast(&slatedb_uniffi_cgo_dispatchCallbackInterfaceMergeOperatorClone),
+    .merge = @ptrCast(&slatedb_uniffi_cgo_dispatchCallbackInterfaceMergeOperatorMethod0),
 };
 
 pub fn lowerMergeOperator(
@@ -68,10 +69,6 @@ pub fn discardLoweredMergeOperator(raw_handle: ?*anyopaque) void {
 }
 
 fn ensureMergeOperatorVTableRegistered() void {
-    if (merge_operator_vtable_registered) {
-        return;
-    }
-
     merge_operator_vtable_mutex.lock();
     defer merge_operator_vtable_mutex.unlock();
 
@@ -79,7 +76,7 @@ fn ensureMergeOperatorVTableRegistered() void {
         return;
     }
 
-    ffi.c.uniffi_slatedb_uniffi_fn_init_callback_vtable_mergeoperator(&merge_operator_vtable);
+    ffi.uniffi_slatedb_uniffi_fn_init_callback_vtable_mergeoperator(&merge_operator_vtable);
     merge_operator_vtable_registered = true;
 }
 
@@ -208,4 +205,14 @@ pub export fn slatedb_uniffi_cgo_dispatchCallbackInterfaceMergeOperatorFree(
     handle: u64,
 ) callconv(.c) void {
     merge_operator_handles.remove(handle);
+}
+
+pub export fn slatedb_uniffi_cgo_dispatchCallbackInterfaceMergeOperatorClone(
+    handle: u64,
+) callconv(.c) u64 {
+    const merge_operator = merge_operator_handles.get(handle) orelse {
+        std.log.err("missing SlateDB merge operator handle {d}", .{handle});
+        return 0;
+    };
+    return merge_operator_handles.insert(std.heap.smp_allocator, merge_operator) catch 0;
 }

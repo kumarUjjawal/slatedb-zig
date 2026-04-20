@@ -1,8 +1,14 @@
 const std = @import("std");
+const err = @import("error.zig");
 
 pub const WriteHandle = struct {
     seqnum: u64,
     create_ts: i64,
+};
+
+pub const DbStatus = struct {
+    durable_seq: u64,
+    close_reason: ?err.CloseReason,
 };
 
 pub const KeyRange = struct {

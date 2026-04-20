@@ -17,6 +17,11 @@ pub const FlushType = enum(i32) {
     wal = 2,
 };
 
+pub const IterationOrder = enum(i32) {
+    ascending = 1,
+    descending = 2,
+};
+
 pub const Ttl = union(enum) {
     default,
     no_expiry,
@@ -43,6 +48,7 @@ pub const ScanOptions = struct {
     read_ahead_bytes: u64 = 1,
     cache_blocks: bool = false,
     max_fetch_tasks: u64 = 1,
+    order: ?IterationOrder = null,
 };
 
 pub const WriteOptions = struct {
@@ -81,14 +87,17 @@ pub fn encodeReaderOptions(options: ReaderOptions) rust_call.CallError!rust_buff
 }
 
 pub fn encodeScanOptions(options: ScanOptions) rust_call.CallError!rust_buffer.RustBuffer {
-    var encoded: [22]u8 = undefined;
-    var writer = BufferWriter.init(encoded[0..]);
+    const len: usize = if (options.order == null) 23 else 27;
+
+    var encoded: [27]u8 = undefined;
+    var writer = BufferWriter.init(encoded[0..len]);
     writer.writeI32(@intFromEnum(options.durability_filter));
     writer.writeBool(options.dirty);
     writer.writeU64(options.read_ahead_bytes);
     writer.writeBool(options.cache_blocks);
     writer.writeU64(options.max_fetch_tasks);
-    return rust_buffer.RustBuffer.fromBytes(encoded[0..]);
+    writer.writeOptionalIterationOrder(options.order);
+    return rust_buffer.RustBuffer.fromBytes(encoded[0..len]);
 }
 
 pub fn encodeWriteOptions(options: WriteOptions) rust_call.CallError!rust_buffer.RustBuffer {
@@ -166,5 +175,14 @@ const BufferWriter = struct {
 
     fn writeI64(self: *BufferWriter, value: i64) void {
         self.writeU64(@bitCast(value));
+    }
+
+    fn writeOptionalIterationOrder(self: *BufferWriter, value: ?IterationOrder) void {
+        if (value) |order| {
+            self.writeBool(true);
+            self.writeI32(@intFromEnum(order));
+        } else {
+            self.writeBool(false);
+        }
     }
 };

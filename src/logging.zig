@@ -56,9 +56,10 @@ var log_callback_handles: callback_handle_map.HandleMap(LogCallback) = .{};
 var log_callback_vtable_registered = false;
 var log_callback_vtable_mutex: spin_lock.SpinLock = .{};
 
-var log_callback_vtable = ffi.c.UniffiVTableCallbackInterfaceLogCallback{
-    .log = @ptrCast(&slatedb_uniffi_cgo_dispatchCallbackInterfaceLogCallbackMethod0),
+var log_callback_vtable = ffi.UniffiVTableCallbackInterfaceLogCallback{
     .uniffiFree = @ptrCast(&slatedb_uniffi_cgo_dispatchCallbackInterfaceLogCallbackFree),
+    .uniffiClone = @ptrCast(&slatedb_uniffi_cgo_dispatchCallbackInterfaceLogCallbackClone),
+    .log = @ptrCast(&slatedb_uniffi_cgo_dispatchCallbackInterfaceLogCallbackMethod0),
 };
 
 pub fn initLogging(
@@ -81,10 +82,6 @@ pub fn initLogging(
 }
 
 fn ensureLogCallbackVTableRegistered() void {
-    if (log_callback_vtable_registered) {
-        return;
-    }
-
     log_callback_vtable_mutex.lock();
     defer log_callback_vtable_mutex.unlock();
 
@@ -92,7 +89,7 @@ fn ensureLogCallbackVTableRegistered() void {
         return;
     }
 
-    ffi.c.uniffi_slatedb_uniffi_fn_init_callback_vtable_logcallback(&log_callback_vtable);
+    ffi.uniffi_slatedb_uniffi_fn_init_callback_vtable_logcallback(&log_callback_vtable);
     log_callback_vtable_registered = true;
 }
 
@@ -214,4 +211,14 @@ pub export fn slatedb_uniffi_cgo_dispatchCallbackInterfaceLogCallbackFree(
     handle: u64,
 ) callconv(.c) void {
     log_callback_handles.remove(handle);
+}
+
+pub export fn slatedb_uniffi_cgo_dispatchCallbackInterfaceLogCallbackClone(
+    handle: u64,
+) callconv(.c) u64 {
+    const callback = log_callback_handles.get(handle) orelse {
+        std.log.err("missing SlateDB log callback handle {d}", .{handle});
+        return 0;
+    };
+    return log_callback_handles.insert(std.heap.smp_allocator, callback) catch 0;
 }

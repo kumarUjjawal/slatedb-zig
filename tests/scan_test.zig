@@ -61,11 +61,13 @@ test "Db async scan variants" {
         .{ .key = "other:01", .value = "other" },
     });
 
-    var empty_start_scan = test_db.db.scan(io, .{
-        .start = "",
-        .start_inclusive = true,
+    var empty_range_scan = test_db.db.scan(io, .{
+        .start = "item:02",
+        .start_inclusive = false,
+        .end = "item:02",
+        .end_inclusive = false,
     });
-    try std.testing.expectError(error.Invalid, empty_start_scan.await(io));
+    try std.testing.expectError(error.Invalid, empty_range_scan.await(io));
 
     var reversed_scan = test_db.db.scan(io, .{
         .start = "item:03",

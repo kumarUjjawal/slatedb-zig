@@ -40,14 +40,16 @@ test "Db status after build" {
     var test_db = try support.TestDb.init();
     defer test_db.deinit();
 
-    try test_db.db.status();
+    const status = try test_db.db.status();
+    try std.testing.expect(status.close_reason == null);
 }
 
 test "Db lifecycle and basic CRUD" {
     var test_db = try support.TestDb.init();
     defer test_db.deinit();
 
-    try test_db.db.status();
+    const open_status = try test_db.db.status();
+    try std.testing.expect(open_status.close_reason == null);
 
     const write_handle = try test_db.db.putBlocking("hello", "world");
     try std.testing.expect(write_handle.seqnum > 0);
@@ -60,7 +62,9 @@ test "Db lifecycle and basic CRUD" {
     try std.testing.expectEqualSlices(u8, "world", value.?);
 
     try test_db.shutdown();
-    try std.testing.expectError(error.Closed, test_db.db.status());
+    const closed_status = try test_db.db.status();
+    try std.testing.expect(closed_status.close_reason != null);
+    try std.testing.expectEqual(slatedb.CloseReason.clean, closed_status.close_reason.?);
     try std.testing.expectError(error.Closed, test_db.db.putBlocking("after-shutdown", "value"));
 }
 

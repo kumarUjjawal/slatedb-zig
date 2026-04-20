@@ -3,6 +3,7 @@ const config = @import("config.zig");
 const db = @import("db.zig");
 const db_reader = @import("db_reader.zig");
 const ffi = @import("ffi.zig");
+const metrics = @import("metrics.zig");
 const merge_operator = @import("merge_operator.zig");
 const object_handle = @import("object_handle.zig");
 const object_store = @import("object_store.zig");
@@ -98,6 +99,27 @@ pub const DbBuilder = struct {
         ffi.c.uniffi_slatedb_uniffi_fn_method_dbbuilder_with_merge_operator(
             builder_handle,
             merge_operator_handle,
+            &status,
+        );
+        try rust_call.checkStatus(status);
+    }
+
+    pub fn withMetricsRecorder(
+        self: *DbBuilder,
+        recorder: anytype,
+    ) (std.mem.Allocator.Error || rust_call.CallError)!void {
+        try ffi.ensureCompatible();
+
+        const builder_handle = try self.handle.beginRustCall();
+        defer self.handle.finishRustCall();
+
+        const lowered_recorder = try metrics.lowerMetricsRecorder(recorder);
+        errdefer lowered_recorder.discard();
+
+        var status = std.mem.zeroes(ffi.c.RustCallStatus);
+        ffi.uniffi_slatedb_uniffi_fn_method_dbbuilder_with_metrics_recorder(
+            @intFromPtr(builder_handle),
+            lowered_recorder.raw,
             &status,
         );
         try rust_call.checkStatus(status);
@@ -222,6 +244,27 @@ pub const DbReaderBuilder = struct {
         ffi.c.uniffi_slatedb_uniffi_fn_method_dbreaderbuilder_with_merge_operator(
             builder_handle,
             merge_operator_handle,
+            &status,
+        );
+        try rust_call.checkStatus(status);
+    }
+
+    pub fn withMetricsRecorder(
+        self: *DbReaderBuilder,
+        recorder: anytype,
+    ) (std.mem.Allocator.Error || rust_call.CallError)!void {
+        try ffi.ensureCompatible();
+
+        const builder_handle = try self.handle.beginRustCall();
+        defer self.handle.finishRustCall();
+
+        const lowered_recorder = try metrics.lowerMetricsRecorder(recorder);
+        errdefer lowered_recorder.discard();
+
+        var status = std.mem.zeroes(ffi.c.RustCallStatus);
+        ffi.uniffi_slatedb_uniffi_fn_method_dbreaderbuilder_with_metrics_recorder(
+            @intFromPtr(builder_handle),
+            lowered_recorder.raw,
             &status,
         );
         try rust_call.checkStatus(status);

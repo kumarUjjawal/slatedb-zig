@@ -10,7 +10,8 @@ test "Db async lifecycle and CRUD" {
     var test_db = try support.TestDb.initAsync(io);
     defer test_db.deinit();
 
-    try test_db.db.status();
+    const status = try test_db.db.status();
+    try std.testing.expect(status.close_reason == null);
 
     var put_future = test_db.db.put(io, "hello", "world");
     const write_handle = try put_future.await(io);
