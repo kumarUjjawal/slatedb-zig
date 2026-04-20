@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  zig:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out slatedb-zig
+        uses: actions/checkout@v4
+
+      - name: Check out SlateDB
+        uses: actions/checkout@v4
+        with:
+          repository: slatedb/slatedb
+          ref: 46543bff2c577440e2daf2315cf926671cb9cc5e
+          path: upstream-slatedb
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential pkg-config
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Zig 0.16.0
+        run: |
+          curl -L -o /tmp/zig.tar.xz https://ziglang.org/download/0.16.0/zig-x86_64-linux-0.16.0.tar.xz
+          tar -xf /tmp/zig.tar.xz -C /tmp
+          echo "/tmp/zig-x86_64-linux-0.16.0" >> "${GITHUB_PATH}"
+
+      - name: Install uniffi-bindgen-go
+        run: cargo install uniffi-bindgen-go --git https://github.com/NordSecurity/uniffi-bindgen-go --tag v0.7.0+v0.31.0
+
+      - name: Generate header
+        run: ./scripts/generate-header.sh "${GITHUB_WORKSPACE}/upstream-slatedb"
+
+      - name: Check generated header
+        run: git diff --exit-code -- include/slatedb.h
+
+      - name: Run Zig tests
+        env:
+          LD_LIBRARY_PATH: "${{ github.workspace }}/upstream-slatedb/target/debug:${LD_LIBRARY_PATH}"
+        run: zig build test -Dupstream_dir="${GITHUB_WORKSPACE}/upstream-slatedb"
