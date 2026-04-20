@@ -19,7 +19,7 @@ pub fn build(b: *std.Build) void {
         .Debug => b.fmt("{s}/target/debug", .{upstream_dir}),
         .ReleaseSafe, .ReleaseFast, .ReleaseSmall => b.fmt("{s}/target/release", .{upstream_dir}),
     };
-    const lib_dir = b.path(lib_dir_override orelse default_lib_dir);
+    const lib_dir = lazyPathFromString(b, lib_dir_override orelse default_lib_dir);
 
     const slatedb_mod = b.addModule("slatedb", .{
         .root_source_file = b.path("src/slatedb.zig"),
@@ -56,4 +56,11 @@ fn configureModule(b: *std.Build, module: *std.Build.Module, lib_dir: std.Build.
         .preferred_link_mode = .dynamic,
         .use_pkg_config = .no,
     });
+}
+
+fn lazyPathFromString(b: *std.Build, value: []const u8) std.Build.LazyPath {
+    if (std.fs.path.isAbsolute(value)) {
+        return .{ .cwd_relative = value };
+    }
+    return b.path(value);
 }
