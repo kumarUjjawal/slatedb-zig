@@ -112,6 +112,27 @@ exe.root_module.addImport("slatedb", dep.module("slatedb"));
 Your program still needs access to the upstream `libslatedb_uniffi` shared
 library at build time and runtime.
 
+## Example App
+
+A checked-in smoke example lives in `examples/` and uses the same flow as the
+basic package smoke test:
+
+- resolve an in-memory object store
+- build a DB
+- put a key
+- read it back
+- shut the DB down cleanly
+
+Run it with:
+
+```bash
+cargo build --manifest-path ../slatedb/Cargo.toml -p slatedb-uniffi
+zig build example -Dupstream_dir=../slatedb
+```
+
+If your SlateDB checkout lives somewhere else, pass that path with
+`-Dupstream_dir=/absolute/path/to/slatedb`.
+
 ## Header Regeneration
 
 The header is generated from the upstream shared library with

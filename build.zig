@@ -38,13 +38,33 @@ pub fn build(b: *std.Build) void {
     });
     configureModule(b, tests_root, lib_dir);
 
+    const example_root = b.createModule(.{
+        .root_source_file = b.path("examples/smoke.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{
+            .{ .name = "slatedb", .module = slatedb_mod },
+        },
+    });
+    configureModule(b, example_root, lib_dir);
+
     const unit_tests = b.addTest(.{
         .root_module = tests_root,
     });
+    const smoke_example = b.addExecutable(.{
+        .name = "slatedb-smoke",
+        .root_module = example_root,
+    });
 
     const run_unit_tests = b.addRunArtifact(unit_tests);
+    const run_smoke_example = b.addRunArtifact(smoke_example);
+    const lib_dir_env = lib_dir_override orelse default_lib_dir;
+    run_smoke_example.setEnvironmentVariable("DYLD_LIBRARY_PATH", lib_dir_env);
+    run_smoke_example.setEnvironmentVariable("LD_LIBRARY_PATH", lib_dir_env);
     const test_step = b.step("test", "Run Zig binding tests");
     test_step.dependOn(&run_unit_tests.step);
+    const example_step = b.step("example", "Run the checked-in smoke example");
+    example_step.dependOn(&run_smoke_example.step);
 }
 
 fn configureModule(b: *std.Build, module: *std.Build.Module, lib_dir: std.Build.LazyPath) void {

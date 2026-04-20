@@ -7,8 +7,10 @@
     .paths = .{
         "LICENSE",
         "NOTICE",
+        "README.md",
         "build.zig",
         "build.zig.zon",
+        "examples",
         "include",
         "scripts",
         "src",
