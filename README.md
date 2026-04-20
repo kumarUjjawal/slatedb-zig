@@ -152,6 +152,11 @@ GitHub Actions checks:
 - header regeneration stays clean
 - Zig tests pass on Linux and macOS against a pinned upstream SlateDB commit
 
+## Releases
+
+GitHub releases are cut from `v*` tags after the same header and test checks
+pass on Linux and macOS.
+
 ## License
 
 Apache-2.0. See `LICENSE` and `NOTICE`.
