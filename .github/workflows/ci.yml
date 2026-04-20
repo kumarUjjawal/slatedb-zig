@@ -11,7 +11,14 @@ permissions:
 
 jobs:
   zig:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+
+    runs-on: ${{ matrix.os }}
 
     steps:
       - name: Check out slatedb-zig
@@ -25,6 +32,7 @@ jobs:
           path: upstream-slatedb
 
       - name: Install build dependencies
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential pkg-config
@@ -34,9 +42,20 @@ jobs:
 
       - name: Install Zig 0.16.0
         run: |
-          curl -L -o /tmp/zig.tar.xz https://ziglang.org/download/0.16.0/zig-x86_64-linux-0.16.0.tar.xz
+          case "$(uname -s)-$(uname -m)" in
+            Linux-x86_64) zig_platform="zig-x86_64-linux-0.16.0" ;;
+            Linux-aarch64|Linux-arm64) zig_platform="zig-aarch64-linux-0.16.0" ;;
+            Darwin-x86_64) zig_platform="zig-x86_64-macos-0.16.0" ;;
+            Darwin-arm64) zig_platform="zig-aarch64-macos-0.16.0" ;;
+            *)
+              echo "unsupported runner: $(uname -s)-$(uname -m)" >&2
+              exit 1
+              ;;
+          esac
+          rm -rf "/tmp/${zig_platform}"
+          curl -L -o /tmp/zig.tar.xz "https://ziglang.org/download/0.16.0/${zig_platform}.tar.xz"
           tar -xf /tmp/zig.tar.xz -C /tmp
-          echo "/tmp/zig-x86_64-linux-0.16.0" >> "${GITHUB_PATH}"
+          echo "/tmp/${zig_platform}" >> "${GITHUB_PATH}"
 
       - name: Install uniffi-bindgen-go
         run: cargo install uniffi-bindgen-go --git https://github.com/NordSecurity/uniffi-bindgen-go --tag v0.7.0+v0.31.0
@@ -48,6 +67,10 @@ jobs:
         run: git diff --exit-code -- include/slatedb.h
 
       - name: Run Zig tests
-        env:
-          LD_LIBRARY_PATH: "${{ github.workspace }}/upstream-slatedb/target/debug:${LD_LIBRARY_PATH}"
-        run: zig build test -Dupstream_dir="${GITHUB_WORKSPACE}/upstream-slatedb"
+        run: |
+          if [[ "$(uname -s)" == "Darwin" ]]; then
+            export DYLD_LIBRARY_PATH="${GITHUB_WORKSPACE}/upstream-slatedb/target/debug:${DYLD_LIBRARY_PATH}"
+          else
+            export LD_LIBRARY_PATH="${GITHUB_WORKSPACE}/upstream-slatedb/target/debug:${LD_LIBRARY_PATH}"
+          fi
+          zig build test -Dupstream_dir="${GITHUB_WORKSPACE}/upstream-slatedb"

@@ -150,7 +150,7 @@ cargo install uniffi-bindgen-go --git https://github.com/NordSecurity/uniffi-bin
 GitHub Actions checks:
 
 - header regeneration stays clean
-- Zig tests pass against a pinned upstream SlateDB commit
+- Zig tests pass on Linux and macOS against a pinned upstream SlateDB commit
 
 ## License
 
