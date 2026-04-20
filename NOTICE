@@ -1,0 +1,8 @@
+slatedb-zig
+Copyright 2026 Kumar Ujjawal
+
+This project contains code derived from SlateDB:
+https://github.com/slatedb/slatedb
+
+Original SlateDB work is Copyright 2024 Chris Riccomini
+and SlateDB contributors.

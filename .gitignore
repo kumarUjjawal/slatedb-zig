@@ -3,6 +3,7 @@ zig-out/
 
 # Local SlateDB build output used for testing the Zig wrapper.
 target/
+upstream-slatedb/
 libslatedb_uniffi.so
 libslatedb_uniffi.dylib
 slatedb_uniffi.dll
@@ -10,6 +11,8 @@ slatedb_uniffi.dll
 # Temporary workdirs for header generation and local smoke tests.
 .cache/
 tmp/
+zig-*.tar.xz
+zig-*/
 
 # Editor and OS files.
 .DS_Store
