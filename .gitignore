@@ -1,0 +1,18 @@
+.zig-cache/
+zig-out/
+
+# Local SlateDB build output used for testing the Zig wrapper.
+target/
+libslatedb_uniffi.so
+libslatedb_uniffi.dylib
+slatedb_uniffi.dll
+
+# Temporary workdirs for header generation and local smoke tests.
+.cache/
+tmp/
+
+# Editor and OS files.
+.DS_Store
+.idea/
+.vscode/
+.env
