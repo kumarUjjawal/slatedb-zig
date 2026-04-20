@@ -36,7 +36,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: slatedb/slatedb
-          ref: 46543bff2c577440e2daf2315cf926671cb9cc5e
+          ref: 360de24e9109cd7166708743e5d35aab7f4cb7db
           path: upstream-slatedb
 
       - name: Install build dependencies
@@ -64,9 +64,6 @@ jobs:
           curl -L -o /tmp/zig.tar.xz "https://ziglang.org/download/0.16.0/${zig_platform}.tar.xz"
           tar -xf /tmp/zig.tar.xz -C /tmp
           echo "/tmp/${zig_platform}" >> "${GITHUB_PATH}"
-
-      - name: Install uniffi-bindgen-go
-        run: cargo install uniffi-bindgen-go --git https://github.com/NordSecurity/uniffi-bindgen-go --tag v0.7.0+v0.31.0
 
       - name: Generate header
         run: ./scripts/generate-header.sh "${GITHUB_WORKSPACE}/upstream-slatedb"

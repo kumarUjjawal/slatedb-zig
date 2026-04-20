@@ -13,8 +13,8 @@ This is not an official SlateDB binding.
 
 - community binding repo
 - pinned to Zig `0.16.0`
-- CI is pinned to upstream SlateDB commit `46543bff2c577440e2daf2315cf926671cb9cc5e`
-- checked-in UniFFI header in `include/slatedb.h`
+- tested against upstream SlateDB commit `360de24e9109cd7166708743e5d35aab7f4cb7db`
+- checked-in UniFFI header in `include/slatedb.h`, copied from upstream `bindings/go/uniffi/slatedb.h`
 - async API built on Zig `std.Io.Future`
 - blocking helpers for the same operations
 
@@ -32,14 +32,16 @@ The binding currently covers:
 - snapshots
 - option structs and option-based methods
 - typed call error details
+- custom metrics recorder callbacks
 - built-in metrics snapshot
 - logging callback
 - merge operator callback
 - WAL reader
 
-Still missing:
+Not covered yet:
 
-- custom metrics recorder callbacks
+- admin and manifest inspection APIs that exist in newer upstream Go bindings
+- a few newer builder and reader extras outside the main DB and callback surface
 
 ## Repo Layout
 
@@ -54,8 +56,8 @@ Still missing:
 - Zig `0.16.0`
 - Rust toolchain
 - C toolchain
-- `uniffi-bindgen-go` `v0.7.0+v0.31.0` if you want to regenerate the header
 - a SlateDB checkout with the `slatedb-uniffi` crate
+- `uniffi-bindgen-go` `v0.7.0+v0.31.0` only if your upstream checkout does not include `bindings/go/uniffi/slatedb.h`
 
 ## Local Development
 
@@ -135,11 +137,15 @@ If your SlateDB checkout lives somewhere else, pass that path with
 
 ## Header Regeneration
 
-The header is generated from the upstream shared library with
+The script first copies the checked-in upstream Go header from
+`bindings/go/uniffi/slatedb.h`. This keeps the Zig package aligned with the
+same C header upstream ships for Go.
+
+If that header is missing from the upstream checkout, the script falls back to
 `uniffi-bindgen-go`. The generated Go output is thrown away. Only the C header
 is kept.
 
-Install the generator with:
+Install the fallback generator with:
 
 ```bash
 cargo install uniffi-bindgen-go --git https://github.com/NordSecurity/uniffi-bindgen-go --tag v0.7.0+v0.31.0
@@ -150,7 +156,7 @@ cargo install uniffi-bindgen-go --git https://github.com/NordSecurity/uniffi-bin
 GitHub Actions checks:
 
 - header regeneration stays clean
-- Zig tests pass on Linux and macOS against a pinned upstream SlateDB commit
+- Zig tests pass on Linux and macOS against upstream SlateDB commit `360de24e9109cd7166708743e5d35aab7f4cb7db`
 
 ## Releases
 

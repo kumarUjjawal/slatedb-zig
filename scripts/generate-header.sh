@@ -5,8 +5,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." >/dev/null 2>&1 && pwd)"
 UPSTREAM_SLATEDB_DIR="${UPSTREAM_SLATEDB_DIR:-${1:-${ROOT_DIR}/../slatedb}}"
 UNIFFI_DIR="${UPSTREAM_SLATEDB_DIR}/bindings/uniffi"
+GO_HEADER_FILE="${UPSTREAM_SLATEDB_DIR}/bindings/go/uniffi/slatedb.h"
 INCLUDE_DIR="${ROOT_DIR}/include"
 TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/slatedb-zig-header.XXXXXX")"
+TARGET_DIR="${CARGO_TARGET_DIR:-${UPSTREAM_SLATEDB_DIR}/target}"
 
 cleanup() {
   rm -rf "${TMP_DIR}"
@@ -19,20 +21,28 @@ if [[ ! -f "${UPSTREAM_SLATEDB_DIR}/Cargo.toml" ]]; then
   exit 1
 fi
 
+cargo build --manifest-path "${UPSTREAM_SLATEDB_DIR}/Cargo.toml" -p slatedb-uniffi
+
+mkdir -p "${INCLUDE_DIR}"
+
+if [[ -f "${GO_HEADER_FILE}" ]]; then
+  cp "${GO_HEADER_FILE}" "${INCLUDE_DIR}/slatedb.h"
+  perl -0pi -e 's/[ \t]+\n/\n/g' "${INCLUDE_DIR}/slatedb.h"
+  exit 0
+fi
+
 if ! command -v uniffi-bindgen-go >/dev/null 2>&1; then
-  echo "uniffi-bindgen-go is required on PATH" >&2
+  echo "uniffi-bindgen-go is required on PATH when ${GO_HEADER_FILE} is missing" >&2
   echo "install it with:" >&2
   echo "  cargo install uniffi-bindgen-go --git https://github.com/NordSecurity/uniffi-bindgen-go --tag v0.7.0+v0.31.0" >&2
   exit 1
 fi
 
-cargo build --manifest-path "${UPSTREAM_SLATEDB_DIR}/Cargo.toml" -p slatedb-uniffi
-
 LIB_FILE=""
 for candidate in \
-  "${UPSTREAM_SLATEDB_DIR}/target/debug/libslatedb_uniffi.so" \
-  "${UPSTREAM_SLATEDB_DIR}/target/debug/libslatedb_uniffi.dylib" \
-  "${UPSTREAM_SLATEDB_DIR}/target/debug/slatedb_uniffi.dll"; do
+  "${TARGET_DIR}/debug/libslatedb_uniffi.so" \
+  "${TARGET_DIR}/debug/libslatedb_uniffi.dylib" \
+  "${TARGET_DIR}/debug/slatedb_uniffi.dll"; do
   if [[ -f "${candidate}" ]]; then
     LIB_FILE="${candidate}"
     break
@@ -40,11 +50,9 @@ for candidate in \
 done
 
 if [[ -z "${LIB_FILE}" ]]; then
-  echo "failed to find libslatedb_uniffi under ${UPSTREAM_SLATEDB_DIR}/target/debug" >&2
+  echo "failed to find libslatedb_uniffi under ${TARGET_DIR}/debug" >&2
   exit 1
 fi
-
-mkdir -p "${INCLUDE_DIR}"
 
 (
   cd "${UPSTREAM_SLATEDB_DIR}"
